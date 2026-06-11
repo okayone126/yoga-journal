@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="요가 일지">
+<title>요가 수련 일지</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --teal50:#E1F5EE;--teal100:#9FE1CB;--teal200:#5DCAA5;
+  --teal400:#1D9E75;--teal600:#0F6E56;--teal800:#085041;
+  --amber50:#FAEEDA;--amber100:#FAC775;--amber400:#BA7517;
+  --coral50:#FAECE7;--coral100:#F5C4B3;--coral400:#D85A30;
+  --gray50:#F1EFE8;--gray100:#D3D1C7;--gray200:#B4B2A9;--gray400:#888780;
+  --green100:#C0DD97;--green800:#3B6D11;
+  --bg:#FAFAF8;--surface:#FFFFFF;--border:#E8E6E0;--border2:#D0CEC8;
+  --text1:#1A1A18;--text2:#5A5955;--text3:#9A9893;
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:20px;
+}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;color:var(--text1);font-size:16px;}
+body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:relative;}
+
+/* ── NAV BAR ── */
+.nav-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:0.5px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 8px;cursor:pointer;color:var(--text3);font-size:10px;gap:3px;border:none;background:none;transition:color .15s;}
+.nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-item.active{color:var(--teal400);}
+
+/* ── PAGES ── */
+.page{display:none;flex-direction:column;min-height:100vh;padding-bottom:80px;}
+.page.active{display:flex;}
+.page-scroll{flex:1;overflow-y:auto;padding:16px 16px 0;}
+
+/* ── TOP BAR ── */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0;position:sticky;top:0;background:var(--bg);z-index:10;}
+.top-title{font-size:18px;font-weight:600;color:var(--text1);}
+.top-sub{font-size:13px;color:var(--text3);}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;}
+.card-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.04em;}
+.card-title .icon{width:16px;height:16px;stroke:var(--teal400);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ── DATE PICKER ── */
+.date-pill{display:flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-xl);padding:10px 16px;margin:12px 16px;}
+.date-pill input[type=date]{border:none;background:transparent;font-size:15px;font-weight:500;color:var(--text1);font-family:inherit;flex:1;outline:none;}
+.date-pill svg{width:18px;height:18px;stroke:var(--teal400);fill:none;stroke-width:2;flex-shrink:0;}
+
+/* ── PHASE TABS ── */
+.phase-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.ptab{flex:1;padding:11px 8px;border-radius:var(--radius-md);border:1px solid var(--border2);font-size:13px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;background:var(--bg);color:var(--text2);}
+.ptab.active{background:var(--teal50);border-color:var(--teal200);color:var(--teal600);}
+
+/* ── SCORE ── */
+.score-wrap{margin-bottom:8px;}
+.score-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.score-label-row span{font-size:13px;color:var(--text2);}
+.score-val-badge{font-size:13px;font-weight:600;color:var(--teal600);background:var(--teal50);padding:2px 10px;border-radius:20px;}
+.score-dots{display:flex;gap:6px;}
+.dot{flex:1;height:40px;border-radius:var(--radius-sm);border:1px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s;background:var(--bg);}
+.dot.sel-body{background:var(--teal400);border-color:var(--teal400);color:#fff;}
+.dot.sel-mind{background:var(--amber400);border-color:var(--amber400);color:#fff;}
+.score-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:6px;}
+.divider{border:none;border-top:0.5px solid var(--border);margin:12px 0;}
+
+/* ── CHECKS ── */
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.check-item{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:var(--radius-md);border:1px solid var(--border);cursor:pointer;user-select:none;transition:all .15s;background:var(--bg);}
+.check-item.on{border-color:var(--teal200);background:var(--teal50);}
+.check-item.on .cb{background:var(--teal400);border-color:var(--teal400);}
+.check-item.on .cb::after{display:block;}
+.check-item.on span{color:var(--teal600);font-weight:500;}
+.cb{width:17px;height:17px;border:1.5px solid var(--gray200);border-radius:4px;flex-shrink:0;position:relative;background:#fff;}
+.cb::after{content:'';display:none;position:absolute;left:4px;top:1px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg);}
+.check-item span{font-size:13px;color:var(--text1);}
+.check-item.full{grid-column:1/-1;}
+.other-in{border:none;background:transparent;font-size:13px;color:var(--text1);outline:none;font-family:inherit;width:100%;}
+.other-in::placeholder{color:var(--text3);}
+
+/* ── TEXTAREA ── */
+.ta{width:100%;border:1px solid var(--border);border-radius:var(--radius-md);padding:11px 13px;font-size:14px;font-family:inherit;color:var(--text1);background:var(--bg);resize:none;line-height:1.65;outline:none;}
+.ta:focus{border-color:var(--teal200);}
+.ta::placeholder{color:var(--text3);}
+
+/* ── BUTTONS ── */
+.btn-main{width:100%;padding:15px;background:var(--teal400);color:#fff;border:none;border-radius:var(--radius-lg);font-size:16px;font-weight:600;cursor:pointer;margin-top:4px;font-family:inherit;transition:opacity .15s;letter-spacing:.02em;}
+.btn-main:active{opacity:.85;}
+.btn-ghost{width:100%;padding:12px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:var(--radius-lg);font-size:14px;font-weight:500;cursor:pointer;margin-top:10px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;}
+
+/* ── REPORT ── */
+.month-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;}
+.month-nav button{background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:7px 14px;cursor:pointer;font-size:14px;color:var(--text2);font-family:inherit;}
+.month-nav span{font-size:17px;font-weight:600;color:var(--text1);}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.stat-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:14px;text-align:center;}
+.stat-num{font-size:24px;font-weight:700;color:var(--text1);}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:3px;}
+.stat-card.accent{background:var(--teal50);border-color:var(--teal100);}
+.stat-card.accent .stat-num{color:var(--teal600);}
+.chart-wrap{position:relative;height:160px;margin:4px 0 10px;}
+.cal-wrap{overflow:hidden;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;}
+.cal-head{text-align:center;font-size:11px;color:var(--text3);padding:4px 0;}
+.cal-day{aspect-ratio:1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--gray50);}
+.cal-day.empty{background:transparent;}
+.cal-day .dn{font-size:11px;line-height:1;color:var(--text3);}
+.cal-day.has-rec .dn{font-weight:600;}
+.cal-day .ds{font-size:9px;margin-top:2px;font-weight:600;}
+.cal-legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:11px;color:var(--text3);}
+.tag-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.tag-nm{font-size:13px;color:var(--text1);min-width:80px;}
+.tag-bg{flex:1;height:8px;background:var(--gray50);border-radius:4px;overflow:hidden;}
+.tag-fill{height:100%;border-radius:4px;background:var(--teal400);}
+.tag-cnt{font-size:11px;color:var(--text2);min-width:24px;text-align:right;}
+.compare-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.compare-lbl{font-size:11px;color:var(--text3);min-width:16px;}
+.compare-bg{flex:1;height:10px;background:var(--gray50);border-radius:5px;overflow:hidden;}
+.compare-fill{height:100%;border-radius:5px;transition:width .5s;}
+.compare-val{font-size:12px;font-weight:600;min-width:24px;text-align:right;}
+.section-sub{font-size:12px;color:var(--text2);margin-bottom:8px;}
+
+/* ── HISTORY ── */
+.rec-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
+.rec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.rec-date{font-size:13px;color:var(--text2);font-weight:500;}
+.rec-score{font-size:12px;color:var(--teal600);font-weight:600;background:var(--teal50);padding:3px 10px;border-radius:20px;}
+.pill{font-size:11px;padding:3px 8px;border-radius:10px;display:inline-block;margin:2px 2px 2px 0;}
+.pill-body{background:var(--teal50);color:var(--teal600);border:0.5px solid var(--teal100);}
+.pill-mind{background:var(--amber50);color:var(--amber400);border:0.5px solid var(--amber100);}
+.pill-focus{background:var(--gray50);color:var(--gray400);border:0.5px solid var(--gray100);}
+.rec-text{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6;}
+.rec-text + .rec-text{margin-top:3px;}
+.empty-msg{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px;line-height:2;}
+
+/* ── INSIGHT CARD ── */
+.insight{background:linear-gradient(135deg,var(--teal50),var(--amber50));border:0.5px solid var(--teal100);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;}
+.insight-title{font-size:13px;font-weight:600;color:var(--teal600);margin-bottom:6px;}
+.insight-body{font-size:13px;color:var(--text2);line-height:1.7;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--teal800);color:#fff;padding:11px 22px;border-radius:var(--radius-lg);font-size:14px;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.15);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── SHARE MODAL ── */
+.share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.share-overlay.open{display:flex;}
+.share-sheet{background:var(--surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:20px 20px 36px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;}
+.share-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px;}
+.share-title{font-size:15px;font-weight:600;color:var(--text1);margin-bottom:14px;}
+
+/* ── SHARE CARD (공유용 카드) ── */
+.share-card{background:#FFFDF8;border:1px solid #E8E0D0;border-radius:16px;padding:20px;margin-bottom:16px;font-family:-apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;}
+.sc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #EDE8DF;}
+.sc-logo{font-size:12px;font-weight:700;color:var(--teal600);letter-spacing:.06em;}
+.sc-date{font-size:13px;color:var(--text2);font-weight:500;}
+.sc-section{margin-bottom:12px;}
+.sc-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+.sc-score-row{display:flex;gap:8px;margin-bottom:8px;}
+.sc-score-box{flex:1;background:var(--teal50);border-radius:10px;padding:10px;text-align:center;}
+.sc-score-box.mind{background:var(--amber50);}
+.sc-score-num{font-size:22px;font-weight:700;color:var(--teal600);}
+.sc-score-box.mind .sc-score-num{color:var(--amber400);}
+.sc-score-lbl{font-size:10px;color:var(--text2);margin-top:2px;}
+.sc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
+.sc-tag{font-size:11px;padding:3px 8px;border-radius:8px;background:var(--teal50);color:var(--teal600);border:0.5px solid var(--teal100);}
+.sc-tag.mind{background:var(--amber50);color:var(--amber400);border-color:var(--amber100);}
+.sc-tag.focus{background:var(--gray50);color:var(--gray400);border-color:var(--gray100);}
+.sc-text-row{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:0.5px solid #F0EBE0;}
+.sc-text-row:last-child{border-bottom:none;}
+.sc-emoji{font-size:14px;flex-shrink:0;line-height:1.5;}
+.sc-text{font-size:12px;color:var(--text1);line-height:1.65;flex:1;}
+.sc-footer{margin-top:12px;padding-top:10px;border-top:1px solid #EDE8DF;text-align:center;font-size:10px;color:var(--text3);letter-spacing:.04em;}
+
+/* ── SHARE BUTTONS ── */
+.share-btn-row{display:flex;gap:8px;}
+.share-btn{flex:1;padding:13px 8px;border-radius:var(--radius-md);border:1px solid var(--border2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;}
+.share-btn.primary{background:var(--teal400);color:#fff;border-color:var(--teal400);}
+.share-btn.primary:active{opacity:.85;}
+.share-btn.secondary{background:var(--surface);color:var(--text1);}
+.share-btn.secondary:active{background:var(--gray50);}
+.share-close{width:100%;padding:12px;background:transparent;color:var(--text3);border:none;font-size:14px;cursor:pointer;margin-top:10px;font-family:inherit;}
+
+/* 공유 버튼 (카드 안) */
+.rec-share-btn{font-size:12px;color:var(--teal600);background:var(--teal50);border:0.5px solid var(--teal100);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap;}
+.rec-share-btn:active{opacity:.75;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     PAGE 1: 기록
+══════════════════════════════════════ -->
+<div class="page active" id="page-record">
+  <div class="top-bar">
+    <span class="top-title">🧘 수련 기록</span>
+  </div>
+  <div class="date-pill">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <input type="date" id="practiceDate">
+  </div>
+  <div class="page-scroll" id="record-scroll">
+    <div class="phase-tabs">
+      <div class="ptab active" id="tab-before" onclick="switchPhase('before')">☀️ 수련 전</div>
+      <div class="ptab" id="tab-after" onclick="switchPhase('after')">🌙 수련 후</div>
+    </div>
+
+    <!-- BEFORE -->
+    <div id="sec-before">
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          내 몸 상태
+        </div>
+        <div class="score-wrap">
+          <div class="score-label-row">
+            <span>지금 몸은 어때요?</span>
+            <span class="score-val-badge" id="body-b-badge">-</span>
+          </div>
+          <div class="score-dots" id="body-b-dots">
+            <div class="dot" onclick="setScore('body','before',1)">1</div>
+            <div class="dot" onclick="setScore('body','before',2)">2</div>
+            <div class="dot" onclick="setScore('body','before',3)">3</div>
+            <div class="dot" onclick="setScore('body','before',4)">4</div>
+            <div class="dot" onclick="setScore('body','before',5)">5</div>
+          </div>
+          <div class="score-hint">1 매우 불편 &nbsp;·&nbsp; 3 보통 &nbsp;·&nbsp; 5 매우 좋음</div>
+        </div>
+        <div class="divider"></div>
+        <div class="check-grid">
+          <div class="check-item" onclick="tog(this,'body','피곤해요')"><div class="cb"></div><span>피곤해요</span></div>
+          <div class="check-item" onclick="tog(this,'body','긴장돼요')"><div class="cb"></div><span>긴장돼요</span></div>
+          <div class="check-item" onclick="tog(this,'body','편안해요')"><div class="cb"></div><span>편안해요</span></div>
+          <div class="check-item" onclick="tog(this,'body','가벼워요')"><div class="cb"></div><span>가벼워요</span></div>
+          <div class="check-item full" style="cursor:default;"><div class="cb" style="opacity:0;flex-shrink:0;"></div><input class="other-in" id="body-other" placeholder="기타 (직접 입력)" maxlength="20"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          내 마음 상태
+        </div>
+        <div class="score-wrap">
+          <div class="score-label-row">
+            <span>지금 마음은 어때요?</span>
+            <span class="score-val-badge" id="mind-b-badge">-</span>
+          </div>
+          <div class="score-dots" id="mind-b-dots">
+            <div class="dot" onclick="setScore('mind','before',1)">1</div>
+            <div class="dot" onclick="setScore('mind','before',2)">2</div>
+            <div class="dot" onclick="setScore('mind','before',3)">3</div>
+            <div class="dot" onclick="setScore('mind','before',4)">4</div>
+            <div class="dot" onclick="setScore('mind','before',5)">5</div>
+          </div>
+          <div class="score-hint">1 매우 힘듦 &nbsp;·&nbsp; 3 보통 &nbsp;·&nbsp; 5 매우 평온</div>
+        </div>
+        <div class="divider"></div>
+        <div class="check-grid">
+          <div class="check-item" onclick="tog(this,'mind','긴장돼요')"><div class="cb"></div><span>긴장돼요</span></div>
+          <div class="check-item" onclick="tog(this,'mind','답답해요')"><div class="cb"></div><span>답답해요</span></div>
+          <div class="check-item" onclick="tog(this,'mind','편안해요')"><div class="cb"></div><span>편안해요</span></div>
+          <div class="check-item" onclick="tog(this,'mind','가벼워요')"><div class="cb"></div><span>가벼워요</span></div>
+          <div class="check-item full" style="cursor:default;"><div class="cb" style="opacity:0;flex-shrink:0;"></div><input class="other-in" id="mind-other" placeholder="기타 (직접 입력)" maxlength="20"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          오늘의 목표 · 감사한 일
+        </div>
+        <textarea class="ta" id="before-goal" rows="2" placeholder="오늘 수련에서 집중하고 싶은 것, 또는 감사한 일 한 가지를 적어보세요."></textarea>
+      </div>
+
+      <button class="btn-main" onclick="switchPhase('after')">수련 후 기록하기 →</button>
+      <div style="height:12px;"></div>
+    </div>
+
+    <!-- AFTER -->
+    <div id="sec-after" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          수련 후 몸 상태
+        </div>
+        <div class="score-wrap">
+          <div class="score-label-row">
+            <span>수련 후 몸은 어때요?</span>
+            <span class="score-val-badge" id="body-a-badge">-</span>
+          </div>
+          <div class="score-dots" id="body-a-dots">
+            <div class="dot" onclick="setScore('body','after',1)">1</div>
+            <div class="dot" onclick="setScore('body','after',2)">2</div>
+            <div class="dot" onclick="setScore('body','after',3)">3</div>
+            <div class="dot" onclick="setScore('body','after',4)">4</div>
+            <div class="dot" onclick="setScore('body','after',5)">5</div>
+          </div>
+          <div class="score-hint">1 매우 불편 &nbsp;·&nbsp; 3 보통 &nbsp;·&nbsp; 5 매우 좋음</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          수련 후 마음 상태
+        </div>
+        <div class="score-wrap">
+          <div class="score-label-row">
+            <span>수련 후 마음은 어때요?</span>
+            <span class="score-val-badge" id="mind-a-badge">-</span>
+          </div>
+          <div class="score-dots" id="mind-a-dots">
+            <div class="dot" onclick="setScore('mind','after',1)">1</div>
+            <div class="dot" onclick="setScore('mind','after',2)">2</div>
+            <div class="dot" onclick="setScore('mind','after',3)">3</div>
+            <div class="dot" onclick="setScore('mind','after',4)">4</div>
+            <div class="dot" onclick="setScore('mind','after',5)">5</div>
+          </div>
+          <div class="score-hint">1 매우 힘듦 &nbsp;·&nbsp; 3 보통 &nbsp;·&nbsp; 5 매우 평온</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          수련에 집중한 것
+        </div>
+        <div class="check-grid">
+          <div class="check-item" onclick="tog(this,'focus','호흡')"><div class="cb"></div><span>호흡</span></div>
+          <div class="check-item" onclick="tog(this,'focus','몸의 긴장풀기')"><div class="cb"></div><span>몸의 긴장풀기</span></div>
+          <div class="check-item" onclick="tog(this,'focus','마음비우기')"><div class="cb"></div><span>마음비우기</span></div>
+          <div class="check-item" onclick="tog(this,'focus','특정 부위 불편감')"><div class="cb"></div><span>특정 부위 불편감</span></div>
+          <div class="check-item full" style="cursor:default;"><div class="cb" style="opacity:0;flex-shrink:0;"></div><input class="other-in" id="focus-other" placeholder="기타 (직접 입력)" maxlength="20"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          수련 중 떠오른 감정·생각
+        </div>
+        <textarea class="ta" id="after-thought" rows="3" placeholder="수련하면서 느낀 감각이나 떠오른 생각을 자유롭게 적어보세요."></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          오늘 나에게 칭찬 한 가지
+        </div>
+        <textarea class="ta" id="after-praise" rows="2" placeholder="매트 위에 선 오늘의 나를 칭찬해 주세요 :)"></textarea>
+      </div>
+
+      <button class="btn-main" onclick="saveRecord()">✓ 오늘 기록 저장</button>
+      <div style="height:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE 2: 월간 리포트
+══════════════════════════════════════ -->
+<div class="page" id="page-report">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span id="month-label">-</span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="page-scroll">
+    <div class="stat-grid">
+      <div class="stat-card accent"><div class="stat-num" id="st-count">0</div><div class="stat-lbl">이번 달 수련 횟수</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-change">-</div><div class="stat-lbl">전월 대비</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-body">-</div><div class="stat-lbl">평균 몸 점수(후)</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-mind">-</div><div class="stat-lbl">평균 마음 점수(후)</div></div>
+    </div>
+
+    <div class="card" id="insight-wrap" style="display:none;">
+      <div class="insight-title">💡 이번 달 인사이트</div>
+      <div class="insight-body" id="insight-text"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        몸·마음 점수 변화 (수련 후)
+      </div>
+      <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+      <div style="display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--text2);margin-top:4px;">
+        <span><span style="display:inline-block;width:14px;height:3px;background:var(--teal400);border-radius:2px;vertical-align:middle;margin-right:5px;"></span>몸</span>
+        <span><span style="display:inline-block;width:14px;height:3px;background:var(--amber400);border-radius:2px;vertical-align:middle;margin-right:5px;"></span>마음</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        수련 전 → 후 평균 비교
+      </div>
+      <div style="margin-bottom:12px;">
+        <div class="section-sub">몸 상태</div>
+        <div class="compare-row">
+          <span class="compare-lbl">전</span>
+          <div class="compare-bg"><div class="compare-fill" id="bar-body-b" style="width:0%;background:var(--gray200);"></div></div>
+          <span class="compare-val" id="lbl-body-b" style="color:var(--text2);">-</span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-lbl">후</span>
+          <div class="compare-bg"><div class="compare-fill" id="bar-body-a" style="width:0%;background:var(--teal400);"></div></div>
+          <span class="compare-val" id="lbl-body-a" style="color:var(--teal600);">-</span>
+        </div>
+      </div>
+      <div>
+        <div class="section-sub">마음 상태</div>
+        <div class="compare-row">
+          <span class="compare-lbl">전</span>
+          <div class="compare-bg"><div class="compare-fill" id="bar-mind-b" style="width:0%;background:var(--gray200);"></div></div>
+          <span class="compare-val" id="lbl-mind-b" style="color:var(--text2);">-</span>
+        </div>
+        <div class="compare-row">
+          <span class="compare-lbl">후</span>
+          <div class="compare-bg"><div class="compare-fill" id="bar-mind-a" style="width:0%;background:var(--amber400);"></div></div>
+          <span class="compare-val" id="lbl-mind-a" style="color:var(--amber400);">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        수련 달력
+      </div>
+      <div class="cal-wrap">
+        <div class="cal-grid" id="cal-heads"></div>
+        <div class="cal-grid" id="cal-body"></div>
+      </div>
+      <div class="cal-legend">
+        <span>🟩 편안·가벼움(4-5)</span>
+        <span>🟨 보통(3)</span>
+        <span>🟧 힘든 날(1-2)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        자주 느낀 상태 태그
+      </div>
+      <div id="tag-ranks"><div style="font-size:13px;color:var(--text3);text-align:center;padding:16px 0;">기록 없음</div></div>
+    </div>
+    <div style="height:8px;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE 3: 지난 기록
+══════════════════════════════════════ -->
+<div class="page" id="page-history">
+  <div class="top-bar">
+    <span class="top-title">지난 기록</span>
+    <span class="top-sub" id="hist-count-lbl"></span>
+  </div>
+  <div class="page-scroll">
+    <div style="height:8px;"></div>
+    <div id="hist-list"></div>
+  </div>
+</div>
+
+<!-- ── SHARE MODAL ── -->
+<div class="share-overlay" id="shareOverlay" onclick="closeShare(event)">
+  <div class="share-sheet" id="shareSheet">
+    <div class="share-handle"></div>
+    <div class="share-title">📤 선생님께 공유하기</div>
+
+    <!-- 공유 카드 미리보기 -->
+    <div class="share-card" id="shareCard">
+      <div class="sc-header">
+        <span class="sc-logo">🧘 PLAY YOGA</span>
+        <span class="sc-date" id="sc-date"></span>
+      </div>
+
+      <div class="sc-section" id="sc-scores-wrap">
+        <div class="sc-label">몸 · 마음 상태</div>
+        <div class="sc-score-row">
+          <div class="sc-score-box">
+            <div class="sc-score-num" id="sc-body-score">-</div>
+            <div class="sc-score-lbl">수련 전→후 몸</div>
+          </div>
+          <div class="sc-score-box mind">
+            <div class="sc-score-num" id="sc-mind-score">-</div>
+            <div class="sc-score-lbl">수련 전→후 마음</div>
+          </div>
+        </div>
+        <div class="sc-tags" id="sc-body-tags"></div>
+        <div class="sc-tags" id="sc-mind-tags"></div>
+      </div>
+
+      <div class="sc-section" id="sc-focus-wrap">
+        <div class="sc-label">오늘 집중한 것</div>
+        <div class="sc-tags" id="sc-focus-tags"></div>
+      </div>
+
+      <div class="sc-section" id="sc-texts">
+        <div class="sc-text-row" id="sc-goal-row" style="display:none;">
+          <span class="sc-emoji">🎯</span>
+          <span class="sc-text" id="sc-goal"></span>
+        </div>
+        <div class="sc-text-row" id="sc-thought-row" style="display:none;">
+          <span class="sc-emoji">💭</span>
+          <span class="sc-text" id="sc-thought"></span>
+        </div>
+        <div class="sc-text-row" id="sc-praise-row" style="display:none;">
+          <span class="sc-emoji">⭐</span>
+          <span class="sc-text" id="sc-praise"></span>
+        </div>
+      </div>
+
+      <div class="sc-footer">오늘도 매트 위에 선 그대, 칭찬합니다 🌿</div>
+    </div>
+
+    <div class="share-btn-row">
+      <button class="share-btn secondary" id="copyBtn" onclick="copyShareText()">📋 텍스트 복사</button>
+      <button class="share-btn primary" id="imgBtn" onclick="saveShareImage()">🖼 이미지 저장</button>
+    </div>
+    <button class="share-close" onclick="closeShare()">닫기</button>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<nav class="nav-bar">
+  <button class="nav-item active" id="nav-record" onclick="showPage('record')">
+    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    기록
+  </button>
+  <button class="nav-item" id="nav-report" onclick="showPage('report')">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    월간 리포트
+  </button>
+  <button class="nav-item" id="nav-history" onclick="showPage('history')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    지난 기록
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 기존 기록 (이미지 18장) ──
+const SEED = [
+  {date:'2026-04-02',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'힘의 분산',thought:'엉덩이가 하늘로, 발끝이 천장으로 가는 힘을 느꼈다',praise:'다른 부위로 힘을 보내려 노력한 나를 칭찬한다'},
+  {date:'2026-04-07',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['몸의 긴장풀기'],goal:'몸 풀기',thought:'잘 잤는데 목은 왜 뻐근할까, 몸은 훨씬 가볍네',praise:'조금 일찍 일어나서 몸의 긴장푼 나를 칭찬해'},
+  {date:'2026-04-08',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['기타'],goal:'잘 자고 일어날 수 있음에 감사',thought:'유연성은 부족해도 예전보다 몸이 단단해졌구나',praise:'오전시간 요가수련 해냄을 칭찬한다'},
+  {date:'2026-04-09',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['기타'],goal:'한 부위에 기대지 않기',thought:'여러부위로 힘을 조금씩 보내고 있구나',praise:'내 몸이 힘을 쓰는 모습을 바라본 나를 칭찬합니다'},
+  {date:'2026-04-14',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['몸의 긴장풀기'],goal:'다른 화요일에 비해 힘들지 않음에 감사',thought:'콧물때문일까 목 때문일까, 잡생각이 많이 들었다',praise:'딴 생각을 호흡으로 가져오려고 한 나를 칭찬합니다'},
+  {date:'2026-04-15',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['기타'],goal:'한 곳에 힘쓰거나 기대지 않기',thought:'지난주보다 몸의 힘이 빠진 느낌이다',praise:'딴생각을 수련으로 가지고 온 나를 칭찬한다'},
+  {date:'2026-04-16',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['기타'],goal:'눈뜨고 일어남에 감사합니다',thought:'잠 조금 잔거에 비해 생각보다 몸이 부드럽게 움직이네',praise:'수련 미루지 않고 일어난 나를 칭찬한다'},
+  {date:'2026-04-21',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'호흡의 연결',thought:'몸의 움직임이 편안하다. 집중을 잘 하고 있네',praise:'잘 자고 일어난 나를 칭찬합니다'},
+  {date:'2026-04-22',bodyBefore:4,mindBefore:5,bodyAfter:4,mindAfter:5,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['기타'],goal:'마음까지 수련할 수 있는 시간 만들어 주심에 감사합니다',thought:'몸이 가볍고 시원하다',praise:'잠깨고 수련에 참여한 나를 칭찬합니다'},
+  {date:'2026-04-23',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['몸의 긴장풀기'],goal:'잠 깨고 수련을 시작할 수 있음에 감사합니다',thought:'생각을 다시 매트 위로 가져오고 있구나',praise:'수련에 집중한 나를 칭찬합니다'},
+  {date:'2026-04-28',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['호흡'],goal:'동작에 맞는 호흡하기',thought:'전사자세는 늘 힘이든다',praise:'눈 번쩍뜨고 일어난 나를 칭찬한다'},
+  {date:'2026-04-29',bodyBefore:3,mindBefore:4,bodyAfter:3,mindAfter:4,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'동작의 연속성',thought:'동작을 이어 나가며 몸을 살필 수 있었다',praise:'어떻게 갔는지 표현하고 몸의 변화를 알아차리려 가는 나를 칭찬한다'},
+  {date:'2026-05-19',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['몸의 긴장풀기'],goal:'동작 하나하나 꼼꼼하게',thought:'코가 불편하네',praise:'몸이 무겁다고 이지버전 하려다가 힘을 내고 본동작 한 나를 칭찬한다'},
+  {date:'2026-05-20',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['마음비우기'],goal:'수련 전 여유있게 일어난 것에 감사합니다',thought:'코가 막혀서 호흡이 멈추나?',praise:'수련 전 물 한 잔 마신 나를 칭찬한다'},
+  {date:'2026-05-21',bodyBefore:5,mindBefore:4,bodyAfter:5,mindAfter:4,bodyTags:['가벼워요'],mindTags:['편안해요'],focusTags:['기타'],goal:'윗 팔뚝에 힘 주고 내 몸 상태를 알아차릴 수 있음에 감사합니다',thought:'잘 자고 컨디션이 괜찮으니 동작도 마음도 가볍다',praise:'일찍 일어나 할 일들을 해낸 나를 칭찬합니다'},
+  {date:'2026-05-29',bodyBefore:3,mindBefore:4,bodyAfter:3,mindAfter:4,bodyTags:['피곤해요'],mindTags:['가벼워요'],focusTags:['호흡'],goal:'호흡 끊기지 않게 챙기기',thought:'스트레칭 할 때 다리를 좀 더 펴고 싶다',praise:'의식을 호흡과 매트위로 가져온 나를 칭찬한다'},
+  {date:'2026-06-03',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['기타'],mindTags:[],focusTags:['기타'],goal:'보충수업 해 주신 선생님께 감사합니다',thought:'오랜만이라 몸이 무거운 듯, 그러나 힘을 쓸 수 있을만큼 가벼운 듯 했다',praise:'벌떡 일어나 수련에 참여한 나를 칭찬합니다'},
+  {date:'2026-06-04',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['특정 부위 불편감'],goal:'조금씩 발전할 수 있음에 감사합니다',thought:'어깨에 펴니 허리에 힘이 덜 들어갔다',praise:'내 몸의 감각을 알아차림을 칭찬합니다'},
+];
+
+// ── 상태 ──
+const S = {body:{before:0,after:0},mind:{before:0,after:0},tags:{body:[],mind:[],focus:[]}};
+let curY=2026,curM=new Date().getMonth();
+let chartInst=null;
+
+// ── 초기화 ──
+(()=>{
+  const t=new Date();
+  document.getElementById('practiceDate').value=t.toISOString().slice(0,10);
+  loadRecords();
+})();
+
+function getStorage(){try{return JSON.parse(localStorage.getItem('yogaJournal')||'[]');}catch{return[];}}
+function loadRecords(){
+  const existing=getStorage();
+  const existingDates=new Set(existing.map(r=>r.date));
+  SEED.forEach(r=>{if(!existingDates.has(r.date)) existing.push(r);});
+  existing.sort((a,b)=>b.date.localeCompare(a.date));
+  localStorage.setItem('yogaJournal',JSON.stringify(existing));
+}
+function getRecs(){return getStorage();}
+function getMonth(y,m){return getRecs().filter(r=>{const d=new Date(r.date);return d.getFullYear()===y&&d.getMonth()===m;});}
+function avg(arr,k){const v=arr.filter(r=>r[k]>0);return v.length?v.reduce((s,r)=>s+r[k],0)/v.length:0;}
+
+// ── 페이지 전환 ──
+function showPage(p){
+  ['record','report','history'].forEach(n=>{
+    document.getElementById('page-'+n).classList.toggle('active',n===p);
+    document.getElementById('nav-'+n).classList.toggle('active',n===p);
+  });
+  if(p==='report') renderReport();
+  if(p==='history') renderHistory();
+}
+
+// ── 기록 탭 ──
+function switchPhase(p){
+  document.getElementById('sec-before').style.display=p==='before'?'block':'none';
+  document.getElementById('sec-after').style.display=p==='after'?'block':'none';
+  document.getElementById('tab-before').classList.toggle('active',p==='before');
+  document.getElementById('tab-after').classList.toggle('active',p==='after');
+  document.getElementById('record-scroll').scrollTo(0,0);
+}
+
+function setScore(type,phase,val){
+  S[type][phase]=val;
+  const key=type==='body'?'sel-body':'sel-mind';
+  const dotId=`${type}-${phase==='before'?'b':'a'}-dots`;
+  [...document.getElementById(dotId).children].forEach((d,i)=>{
+    d.classList.toggle(key,i<val);
+  });
+  const badge=document.getElementById(`${type}-${phase==='before'?'b':'a'}-badge`);
+  const labels=['','😟 많이 힘들어요','😔 좀 힘들어요','😐 보통이에요','😊 꽤 좋아요','😄 매우 좋아요'];
+  badge.textContent=labels[val]||val;
+}
+
+function tog(el,group,val){
+  el.classList.toggle('on');
+  if(!S.tags[group]) S.tags[group]=[];
+  if(el.classList.contains('on')) S.tags[group].push(val);
+  else S.tags[group]=S.tags[group].filter(v=>v!==val);
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function saveRecord(){
+  const date=document.getElementById('practiceDate').value;
+  const rec={
+    date,savedAt:Date.now(),
+    bodyBefore:S.body.before,bodyAfter:S.body.after,
+    mindBefore:S.mind.before,mindAfter:S.mind.after,
+    bodyTags:[...S.tags.body,document.getElementById('body-other').value.trim()].filter(Boolean),
+    mindTags:[...S.tags.mind,document.getElementById('mind-other').value.trim()].filter(Boolean),
+    focusTags:[...S.tags.focus,document.getElementById('focus-other').value.trim()].filter(Boolean),
+    goal:document.getElementById('before-goal').value.trim(),
+    thought:document.getElementById('after-thought').value.trim(),
+    praise:document.getElementById('after-praise').value.trim()
+  };
+  const recs=getRecs();
+  const idx=recs.findIndex(r=>r.date===date);
+  if(idx>=0) recs[idx]=rec; else recs.unshift(rec);
+  recs.sort((a,b)=>b.date.localeCompare(a.date));
+  localStorage.setItem('yogaJournal',JSON.stringify(recs));
+  toast('✓ 오늘 기록이 저장됐어요!');
+  setTimeout(()=>{
+    resetForm();
+    switchPhase('before');
+    openShare(rec);
+  },1400);
+}
+
+function resetForm(){
+  document.querySelectorAll('.check-item.on').forEach(el=>el.classList.remove('on'));
+  S.body={before:0,after:0};S.mind={before:0,after:0};S.tags={body:[],mind:[],focus:[]};
+  ['body-b-dots','mind-b-dots','body-a-dots','mind-a-dots'].forEach(id=>{
+    [...document.getElementById(id).children].forEach(d=>d.className='dot');
+  });
+  ['body-b-badge','mind-b-badge','body-a-badge','mind-a-badge'].forEach(id=>document.getElementById(id).textContent='-');
+  ['body-other','mind-other','focus-other','before-goal','after-thought','after-praise'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+}
+
+// ── 리포트 ──
+function changeMonth(d){
+  curM+=d;
+  if(curM<0){curM=11;curY--;}
+  if(curM>11){curM=0;curY++;}
+  renderReport();
+}
+
+function renderReport(){
+  const mn=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('month-label').textContent=curY+'년 '+mn[curM];
+  const recs=getMonth(curY,curM);
+  const pm=curM===0?11:curM-1,py=curM===0?curY-1:curY;
+  const prev=getMonth(py,pm);
+
+  document.getElementById('st-count').textContent=recs.length+'회';
+  const diff=recs.length-prev.length;
+  const el=document.getElementById('st-change');
+  el.textContent=(diff>=0?'+':'')+diff+'회';
+  el.style.color=diff>0?'var(--teal600)':diff<0?'var(--coral400)':'var(--text1)';
+
+  const ba=avg(recs,'bodyAfter'),ma=avg(recs,'mindAfter');
+  document.getElementById('st-body').textContent=ba?ba.toFixed(1):'-';
+  document.getElementById('st-mind').textContent=ma?ma.toFixed(1):'-';
+
+  renderInsight(recs,prev);
+  renderLineChart(recs);
+  renderCompare(recs);
+  renderCal(recs);
+  renderTags(recs);
+}
+
+function renderInsight(recs,prev){
+  const wrap=document.getElementById('insight-wrap');
+  const txt=document.getElementById('insight-text');
+  if(!recs.length){wrap.style.display='none';return;}
+  const lines=[];
+  const ba=avg(recs,'bodyAfter'),ma=avg(recs,'mindAfter');
+  const bb=avg(recs,'bodyBefore'),mb=avg(recs,'mindBefore');
+  if(ba&&bb) lines.push(`수련 후 몸 상태가 평균 ${(ba-bb>0?'+':'')}${(ba-bb).toFixed(1)}점 변했어요.`);
+  if(ma&&mb) lines.push(`마음은 수련 후 평균 ${(ma-mb>0?'+':'')}${(ma-mb).toFixed(1)}점 변했어요.`);
+  const cnt=recs.length,pcnt=prev.length;
+  if(pcnt>0) lines.push(`전월 대비 수련 횟수가 ${cnt-pcnt>=0?cnt-pcnt+'회 늘었어요':Math.abs(cnt-pcnt)+'회 줄었어요'}.`);
+  if(lines.length){wrap.style.display='block';txt.textContent=lines.join(' ');}
+  else wrap.style.display='none';
+}
+
+function renderLineChart(recs){
+  const sorted=[...recs].sort((a,b)=>a.date.localeCompare(b.date));
+  const ctx=document.getElementById('lineChart');
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const p=ctx.parentElement;
+  if(!sorted.length){p.innerHTML='<div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3);">이 달 기록이 없어요</div>';return;}
+  if(!p.querySelector('canvas')){const c=document.createElement('canvas');c.id='lineChart';p.appendChild(c);}
+  chartInst=new Chart(document.getElementById('lineChart'),{
+    type:'line',
+    data:{
+      labels:sorted.map(r=>r.date.slice(5).replace('-','/')),
+      datasets:[
+        {label:'몸',data:sorted.map(r=>r.bodyAfter||null),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.08)',tension:0.35,pointBackgroundColor:'#1D9E75',pointRadius:5,pointHoverRadius:7,borderWidth:2.5,fill:true,spanGaps:true},
+        {label:'마음',data:sorted.map(r=>r.mindAfter||null),borderColor:'#BA7517',backgroundColor:'rgba(186,117,23,.08)',tension:0.35,pointBackgroundColor:'#BA7517',pointRadius:5,pointHoverRadius:7,borderWidth:2.5,fill:true,spanGaps:true}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}점`},bodyFont:{size:13}}},
+      scales:{
+        y:{min:1,max:5,ticks:{stepSize:1,font:{size:11},color:'#9A9893'},grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}},
+        x:{ticks:{font:{size:11},color:'#9A9893',maxRotation:0},grid:{display:false},border:{display:false}}
+      }
+    }
+  });
+}
+
+function renderCompare(recs){
+  const bb=avg(recs,'bodyBefore'),ba=avg(recs,'bodyAfter');
+  const mb=avg(recs,'mindBefore'),ma=avg(recs,'mindAfter');
+  const set=(bar,lbl,val,color)=>{
+    document.getElementById(bar).style.width=(val/5*100)+'%';
+    document.getElementById(bar).style.background=color;
+    document.getElementById(lbl).textContent=val?val.toFixed(1):'-';
+  };
+  set('bar-body-b','lbl-body-b',bb,'var(--gray200)');
+  set('bar-body-a','lbl-body-a',ba,'var(--teal400)');
+  set('bar-mind-b','lbl-mind-b',mb,'var(--gray200)');
+  set('bar-mind-a','lbl-mind-a',ma,'var(--amber400)');
+}
+
+function renderCal(recs){
+  const days=['일','월','화','수','목','금','토'];
+  document.getElementById('cal-heads').innerHTML=days.map(d=>`<div class="cal-head">${d}</div>`).join('');
+  const first=new Date(curY,curM,1).getDay();
+  const total=new Date(curY,curM+1,0).getDate();
+  const rm={};
+  recs.forEach(r=>{rm[parseInt(r.date.slice(8))]=r;});
+  let html='';
+  for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=total;d++){
+    const r=rm[d];
+    if(!r){html+=`<div class="cal-day"><div class="dn">${d}</div></div>`;continue;}
+    const sc=((r.bodyAfter||r.bodyBefore||0)+(r.mindAfter||r.mindBefore||0))/2;
+    let bg,tc;
+    if(sc>=4){bg='#C0DD97';tc='#3B6D11';}
+    else if(sc>=3){bg='#FAC775';tc='#854F0B';}
+    else{bg='#F5C4B3';tc='#993C1D';}
+    html+=`<div class="cal-day has-rec" style="background:${bg}"><div class="dn" style="color:${tc}">${d}</div><div class="ds" style="color:${tc}">${sc.toFixed(1)}</div></div>`;
+  }
+  document.getElementById('cal-body').innerHTML=html;
+}
+
+function renderTags(recs){
+  const cnt={};
+  recs.forEach(r=>{
+    [...(r.bodyTags||[]),...(r.mindTags||[]),...(r.focusTags||[])].forEach(t=>{
+      const k=t.replace(/기타.*/,'').trim();
+      if(k&&k!=='기타') cnt[k]=(cnt[k]||0)+1;
+    });
+  });
+  const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const mx=sorted.length?sorted[0][1]:1;
+  const el=document.getElementById('tag-ranks');
+  if(!sorted.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:16px 0;">기록 없음</div>';return;}
+  el.innerHTML=sorted.map(([tag,c])=>`
+    <div class="tag-row">
+      <span class="tag-nm">${tag}</span>
+      <div class="tag-bg"><div class="tag-fill" style="width:${Math.round(c/mx*100)}%"></div></div>
+      <span class="tag-cnt">${c}회</span>
+    </div>`).join('');
+}
+
+// ── 지난 기록 ──
+function renderHistory(){
+  const recs=getRecs();
+  document.getElementById('hist-count-lbl').textContent='총 '+recs.length+'회';
+  const el=document.getElementById('hist-list');
+  if(!recs.length){el.innerHTML='<div class="empty-msg">아직 저장된 기록이 없어요.<br>첫 수련을 기록해 보세요 🌿</div>';return;}
+  el.innerHTML=recs.map((r,i)=>{
+    const d=r.date.replace(/-/g,'.').slice(2);
+    const bTags=(r.bodyTags||[]).filter(t=>t&&!t.startsWith('기타')).map(t=>`<span class="pill pill-body">몸: ${t}</span>`).join('');
+    const mTags=(r.mindTags||[]).filter(t=>t&&!t.startsWith('기타')).map(t=>`<span class="pill pill-mind">마음: ${t}</span>`).join('');
+    const fTags=(r.focusTags||[]).filter(t=>t&&t!=='기타').map(t=>`<span class="pill pill-focus">집중: ${t}</span>`).join('');
+    const hasBefore=r.bodyBefore||r.mindBefore,hasAfter=r.bodyAfter||r.mindAfter;
+    const scoreStr=hasBefore&&hasAfter
+      ?`몸 ${r.bodyBefore||'-'}→${r.bodyAfter||'-'} / 마음 ${r.mindBefore||'-'}→${r.mindAfter||'-'}`
+      :hasAfter?`몸 ${r.bodyAfter} / 마음 ${r.mindAfter}`:'';
+    return`<div class="rec-card">
+      <div class="rec-header">
+        <span class="rec-date">${d}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${scoreStr?`<span class="rec-score">${scoreStr}</span>`:''}
+          <button class="rec-share-btn" onclick="openShareByIndex(${i})">📤 공유</button>
+        </div>
+      </div>
+      <div>${bTags}${mTags}${fTags}</div>
+      ${r.goal?`<div class="rec-text">🎯 ${r.goal}</div>`:''}
+      ${r.thought?`<div class="rec-text">💭 ${r.thought}</div>`:''}
+      ${r.praise?`<div class="rec-text">⭐ ${r.praise}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── 공유 기능 ──
+let shareRec=null;
+
+function openShare(rec){
+  shareRec=rec;
+  // 날짜
+  const d=new Date(rec.date);
+  document.getElementById('sc-date').textContent=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  // 점수
+  const bb=rec.bodyBefore,ba=rec.bodyAfter,mb=rec.mindBefore,ma=rec.mindAfter;
+  document.getElementById('sc-body-score').textContent=(bb||ba)?(bb||'-')+'→'+(ba||'-'):'-';
+  document.getElementById('sc-mind-score').textContent=(mb||ma)?(mb||'-')+'→'+(ma||'-'):'-';
+  // 태그
+  const bTags=(rec.bodyTags||[]).filter(t=>t&&!t.startsWith('기타'));
+  const mTags=(rec.mindTags||[]).filter(t=>t&&!t.startsWith('기타'));
+  const fTags=(rec.focusTags||[]).filter(t=>t&&t!=='기타');
+  document.getElementById('sc-body-tags').innerHTML=bTags.map(t=>`<span class="sc-tag">${t}</span>`).join('');
+  document.getElementById('sc-mind-tags').innerHTML=mTags.map(t=>`<span class="sc-tag mind">${t}</span>`).join('');
+  document.getElementById('sc-focus-tags').innerHTML=fTags.map(t=>`<span class="sc-tag focus">${t}</span>`).join('');
+  document.getElementById('sc-focus-wrap').style.display=fTags.length?'block':'none';
+  // 텍스트
+  const setRow=(rowId,textId,val)=>{
+    document.getElementById(rowId).style.display=val?'flex':'none';
+    document.getElementById(textId).textContent=val||'';
+  };
+  setRow('sc-goal-row','sc-goal',rec.goal);
+  setRow('sc-thought-row','sc-thought',rec.thought);
+  setRow('sc-praise-row','sc-praise',rec.praise);
+  // 오픈
+  document.getElementById('shareOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openShareByIndex(i){
+  const recs=getRecs();
+  if(recs[i]) openShare(recs[i]);
+}
+
+function closeShare(e){
+  if(e&&e.target!==document.getElementById('shareOverlay')&&e.type==='click') return;
+  document.getElementById('shareOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function buildShareText(){
+  if(!shareRec) return '';
+  const r=shareRec;
+  const d=new Date(r.date);
+  const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  const bScore=r.bodyBefore&&r.bodyAfter?`${r.bodyBefore}→${r.bodyAfter}점`:r.bodyAfter?`${r.bodyAfter}점`:'-';
+  const mScore=r.mindBefore&&r.mindAfter?`${r.mindBefore}→${r.mindAfter}점`:r.mindAfter?`${r.mindAfter}점`:'-';
+  const bTags=(r.bodyTags||[]).filter(t=>t&&!t.startsWith('기타')).join(', ');
+  const mTags=(r.mindTags||[]).filter(t=>t&&!t.startsWith('기타')).join(', ');
+  const fTags=(r.focusTags||[]).filter(t=>t&&t!=='기타').join(', ');
+  let txt=`🧘 수련 일지 · ${dateStr}\n`;
+  txt+=`${'─'.repeat(20)}\n`;
+  txt+=`몸 상태: ${bScore}${bTags?' ('+bTags+')':''}\n`;
+  txt+=`마음 상태: ${mScore}${mTags?' ('+mTags+')':''}\n`;
+  if(fTags) txt+=`집중한 것: ${fTags}\n`;
+  txt+=`${'─'.repeat(20)}\n`;
+  if(r.goal) txt+=`🎯 ${r.goal}\n`;
+  if(r.thought) txt+=`💭 ${r.thought}\n`;
+  if(r.praise) txt+=`⭐ ${r.praise}\n`;
+  txt+=`\n오늘도 매트 위에 선 그대, 칭찬합니다 🌿`;
+  return txt;
+}
+
+async function copyShareText(){
+  const txt=buildShareText();
+  try{
+    await navigator.clipboard.writeText(txt);
+    toast('📋 텍스트가 복사됐어요! 카카오톡에 붙여넣기 하세요.');
+  }catch{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    toast('📋 복사됐어요! 카카오톡에 붙여넣기 하세요.');
+  }
+}
+
+async function saveShareImage(){
+  const btn=document.getElementById('imgBtn');
+  btn.textContent='⏳ 생성 중...';btn.disabled=true;
+  try{
+    const card=document.getElementById('shareCard');
+    const canvas=await html2canvas(card,{
+      scale:2,backgroundColor:'#FFFDF8',
+      useCORS:true,logging:false,
+      width:card.offsetWidth,height:card.offsetHeight
+    });
+    const link=document.createElement('a');
+    const dateStr=shareRec?shareRec.date.replace(/-/g,''):'record';
+    link.download=`yoga_${dateStr}.png`;
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    toast('🖼 이미지가 저장됐어요! 카카오톡에 사진으로 전송하세요.');
+  }catch(e){
+    toast('이미지 저장 중 오류가 생겼어요. 텍스트 복사를 이용해 주세요.');
+  }finally{
+    btn.textContent='🖼 이미지 저장';btn.disabled=false;
+  }
+}
+
+// ── 리포트 초기 월 설정 (기록이 있는 가장 최근 달) ──
+(()=>{
+  const recs=getRecs();
+  if(recs.length){
+    const latest=new Date(recs[0].date);
+    curY=latest.getFullYear();curM=latest.getMonth();
+  }
+})();
+</script>
+</body>
+</html>
