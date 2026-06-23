@@ -170,10 +170,10 @@ body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:r
 .sc-tag{font-size:11px;padding:3px 8px;border-radius:8px;background:var(--teal50);color:var(--teal600);border:0.5px solid var(--teal100);}
 .sc-tag.mind{background:var(--amber50);color:var(--amber400);border-color:var(--amber100);}
 .sc-tag.focus{background:var(--gray50);color:var(--gray400);border-color:var(--gray100);}
-.sc-text-row{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:0.5px solid #F0EBE0;}
+.sc-text-row{padding:8px 0;border-bottom:0.5px solid #F0EBE0;overflow:hidden;}
 .sc-text-row:last-child{border-bottom:none;}
-.sc-emoji{font-size:14px;flex-shrink:0;line-height:1.5;}
-.sc-text{font-size:12px;color:var(--text1);line-height:1.65;flex:1;}
+.sc-emoji{font-size:14px;line-height:1.65;float:left;width:20px;}
+.sc-text{font-size:12px;color:var(--text1);line-height:1.65;display:block;overflow:hidden;word-break:break-word;}
 .sc-footer{margin-top:12px;padding-top:10px;border-top:1px solid #EDE8DF;text-align:center;font-size:10px;color:var(--text3);letter-spacing:.04em;}
 
 /* ── SHARE BUTTONS ── */
@@ -923,10 +923,16 @@ async function saveShareImage(){
   btn.textContent='⏳ 생성 중...';btn.disabled=true;
   try{
     const card=document.getElementById('shareCard');
+    // 캡처 전 강제 리플로우 — 멀티라인 텍스트 높이가 제대로 반영되도록
+    card.style.height='auto';
+    void card.offsetHeight;
+    await new Promise(r=>setTimeout(r,50));
     const canvas=await html2canvas(card,{
       scale:2,backgroundColor:'#FFFDF8',
       useCORS:true,logging:false,
-      width:card.offsetWidth,height:card.offsetHeight
+      windowWidth:card.scrollWidth,
+      height:card.scrollHeight,
+      width:card.scrollWidth
     });
     const link=document.createElement('a');
     const dateStr=shareRec?shareRec.date.replace(/-/g,''):'record';
