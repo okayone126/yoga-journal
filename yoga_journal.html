@@ -554,8 +554,34 @@ body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:r
 <div class="toast" id="toast"></div>
 
 <script>
-// SEED 데이터 없음 (각자 기기에 저장)
-const SEED = [];
+// SEED 데이터 — localStorage가 비어있을 때만 로드됨
+const SEED = [
+  {date:'2026-04-02',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'힘의 분산',thought:'엉덩이가 하늘로, 발끝이 천장으로 가는 힘을 느꼈다',praise:'다른 부위로 힘을 보내려 노력한 나를 칭찬한다'},
+  {date:'2026-04-07',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['몸의 긴장풀기'],goal:'몸 풀기',thought:'잘 잤는데 목은 왜 뻐근할까, 몸은 훨씬 가볍네',praise:'조금 일찍 일어나서 몸의 긴장푼 나를 칭찬해'},
+  {date:'2026-04-08',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:[],goal:'잘 자고 일어날 수 있음에 감사',thought:'유연성은 부족해도 예전보다 몸이 단단해졌구나',praise:'오전시간 요가수련 해냄을 칭찬한다'},
+  {date:'2026-04-09',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:[],goal:'한 부위에 기대지 않기',thought:'여러부위로 힘을 조금씩 보내고 있구나',praise:'내 몸이 힘을 쓰는 모습을 바라본 나를 칭찬합니다'},
+  {date:'2026-04-14',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['몸의 긴장풀기'],goal:'다른 화요일에 비해 힘들지 않음에 감사',thought:'콧물때문일까 목 때문일까, 잡생각이 많이 들었다',praise:'딴 생각을 호흡으로 가져오려고 한 나를 칭찬합니다'},
+  {date:'2026-04-15',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:[],goal:'한 곳에 힘쓰거나 기대지 않기',thought:'지난주보다 몸의 힘이 빠진 느낌이다',praise:'딴생각을 수련으로 가지고 온 나를 칭찬한다'},
+  {date:'2026-04-16',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:[],goal:'눈뜨고 일어남에 감사합니다',thought:'잠 조금 잔거에 비해 생각보다 몸이 부드럽게 움직이네',praise:'수련 미루지 않고 일어난 나를 칭찬한다'},
+  {date:'2026-04-21',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'호흡의 연결',thought:'몸의 움직임이 편안하다. 집중을 잘 하고 있네',praise:'잘 자고 일어난 나를 칭찬합니다'},
+  {date:'2026-04-22',bodyBefore:4,mindBefore:5,bodyAfter:4,mindAfter:5,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:[],goal:'마음까지 수련할 수 있는 시간 만들어 주심에 감사합니다',thought:'몸이 가볍고 시원하다',praise:'잠깨고 수련에 참여한 나를 칭찬합니다'},
+  {date:'2026-04-23',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['몸의 긴장풀기'],goal:'잠 깨고 수련을 시작할 수 있음에 감사합니다',thought:'생각을 다시 매트 위로 가져오고 있구나',praise:'수련에 집중한 나를 칭찬합니다'},
+  {date:'2026-04-28',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['호흡'],goal:'동작에 맞는 호흡하기',thought:'전사자세는 늘 힘이든다',praise:'눈 번쩍뜨고 일어난 나를 칭찬한다'},
+  {date:'2026-04-29',bodyBefore:3,mindBefore:4,bodyAfter:3,mindAfter:4,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'동작의 연속성',thought:'동작을 이어 나가며 몸을 살필 수 있었다',praise:'어떻게 갔는지 표현하고 몸의 변화를 알아차리려 가는 나를 칭찬한다'},
+  {date:'2026-05-19',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['몸의 긴장풀기'],goal:'동작 하나하나 꼼꼼하게',thought:'코가 불편하네',praise:'몸이 무겁다고 이지버전 하려다가 힘을 내고 본동작 한 나를 칭찬한다'},
+  {date:'2026-05-20',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['마음비우기'],goal:'수련 전 여유있게 일어난 것에 감사합니다',thought:'코가 막혀서 호흡이 멈추나?',praise:'수련 전 물 한 잔 마신 나를 칭찬한다'},
+  {date:'2026-05-21',bodyBefore:5,mindBefore:4,bodyAfter:5,mindAfter:4,bodyTags:['가벼워요'],mindTags:['편안해요'],focusTags:[],goal:'윗 팔뚝에 힘 주고 내 몸 상태를 알아차릴 수 있음에 감사합니다',thought:'잘 자고 컨디션이 괜찮으니 동작도 마음도 가볍다',praise:'일찍 일어나 할 일들을 해낸 나를 칭찬합니다'},
+  {date:'2026-05-29',bodyBefore:3,mindBefore:4,bodyAfter:3,mindAfter:4,bodyTags:['피곤해요'],mindTags:['가벼워요'],focusTags:['호흡'],goal:'호흡 끊기지 않게 챙기기',thought:'스트레칭 할 때 다리를 좀 더 펴고 싶다',praise:'의식을 호흡과 매트위로 가져온 나를 칭찬한다'},
+  {date:'2026-06-03',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:[],mindTags:[],focusTags:[],goal:'보충수업 해 주신 선생님께 감사합니다',thought:'오랜만이라 몸이 무거운 듯, 그러나 힘을 쓸 수 있을만큼 가벼운 듯 했다',praise:'벌떡 일어나 수련에 참여한 나를 칭찬합니다'},
+  {date:'2026-06-04',bodyBefore:4,mindBefore:4,bodyAfter:4,mindAfter:4,bodyTags:['편안해요'],mindTags:['가벼워요'],focusTags:['특정 부위 불편감'],goal:'조금씩 발전할 수 있음에 감사합니다',thought:'어깨에 펴니 허리에 힘이 덜 들어갔다',praise:'내 몸의 감각을 알아차림을 칭찬합니다'},
+  {date:'2026-06-16',bodyBefore:4,mindBefore:4,bodyAfter:5,mindAfter:5,bodyTags:['가벼워요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'호흡 🙏 미리 눈 뜨고 일어날 수 있음에 감사합니다',thought:'새로운 매트에서 수련하니 괜히 더 몸이 쭉쭉 뻗는 기분이다. 수련 전 미리 일어나면 쟁기자세가 더 잘된다.',praise:'미리 일어나 수련을 준비한 나를 칭찬합니다♥'},
+  {date:'2026-06-17',bodyBefore:3,mindBefore:3,bodyAfter:4,mindAfter:4,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['호흡','엉덩이 힘'],goal:'호흡, 엉덩이 힘',thought:'코 상태가 별로라 호흡이 잘 안된다. 엉덩이 힘이 잘 안들어가진다.',praise:'수련 전 여유있게 일어난 나를 칭찬한다♥'},
+  {date:'2026-06-18',bodyBefore:3,mindBefore:3,bodyAfter:4,mindAfter:5,bodyTags:['가벼워요'],mindTags:['어젯밤 기분좋게 잠들지 못한게 걸림'],focusTags:['호흡','마음비우기'],goal:'호흡 🙏 눈 뜰 수 있음에 감사',thought:'새매트에서 다운독이 잘되어서 어깨가 시원하다',praise:'잘 돌아보고 알아차리는 나를 칭찬♥ 더 괜찮다 해주자'},
+  {date:'2026-06-23',bodyBefore:2,mindBefore:3,bodyAfter:4,mindAfter:4,bodyTags:['피곤해요'],mindTags:['가벼워요'],focusTags:['몸의 긴장풀기'],goal:'몸의 이완 🙏 피곤해도 일어남에 감사',thought:'지난주보다 허리가 덜 불편하다',praise:'수련후의 개운함을 알아차리고 수련에 참여한 나를 칭찬♥'},
+  {date:'2026-06-24',bodyBefore:2,mindBefore:3,bodyAfter:4,mindAfter:4,bodyTags:['피곤해요'],mindTags:['편안해요'],focusTags:['특정 부위 불편감'],goal:'몸의이완 🙏 잘 자고 일어남에 감사',thought:'콧물때문에 호흡이 불편하네. 지후랑 같이 하니 재미있네♡',praise:'집중 안되는 상황에서도 매트 위로 집중을 가져온 나를 칭찬합니다♥'},
+  {date:'2026-06-25',bodyBefore:2,mindBefore:3,bodyAfter:3,mindAfter:4,bodyTags:['피곤해요'],mindTags:['가벼워요'],focusTags:['호흡','몸의 긴장풀기'],goal:'호흡 🙏 아이들이 잘 자주어 감사',thought:'팔목에도 힘이 생길까?',praise:'수련 전에 일어나 수련 준비한 나를 칭찬합니다♥'},
+  {date:'2026-06-30',bodyBefore:3,mindBefore:3,bodyAfter:3,mindAfter:3,bodyTags:['편안해요'],mindTags:['편안해요'],focusTags:['호흡'],goal:'호흡 🙏 잘자고 일어남에 감사',thought:'화요일은 몸이 무겁다',praise:'수련 전 일찍 일어난 나를 칭찬합니다♡'},
+];
 
 // ── 상태 ──
 const S = {body:{before:0,after:0},mind:{before:0,after:0},tags:{body:[],mind:[],focus:[]}};
@@ -572,10 +598,13 @@ let chartInst=null;
 function getStorage(){try{return JSON.parse(localStorage.getItem('yogaJournal')||'[]');}catch{return[];}}
 function loadRecords(){
   const existing=getStorage();
-  const existingDates=new Set(existing.map(r=>r.date));
-  SEED.forEach(r=>{if(!existingDates.has(r.date)) existing.push(r);});
-  existing.sort((a,b)=>b.date.localeCompare(a.date));
-  localStorage.setItem('yogaJournal',JSON.stringify(existing));
+  // localStorage가 완전히 비어있을 때만 SEED 로드
+  // → 선생님/친구 폰은 빈 앱, 내 폰(기록 없어진 경우)은 복구
+  if(existing.length===0 && SEED.length>0){
+    const seeded=[...SEED];
+    seeded.sort((a,b)=>b.date.localeCompare(a.date));
+    localStorage.setItem('yogaJournal',JSON.stringify(seeded));
+  }
 }
 function getRecs(){return getStorage();}
 function getMonth(y,m){return getRecs().filter(r=>{const d=new Date(r.date);return d.getFullYear()===y&&d.getMonth()===m;});}
