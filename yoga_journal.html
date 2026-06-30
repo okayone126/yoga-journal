@@ -466,6 +466,9 @@ body{display:flex;flex-direction:column;max-width:480px;margin:0 auto;position:r
     <span class="top-title">지난 기록</span>
     <span class="top-sub" id="hist-count-lbl"></span>
   </div>
+  <div style="padding:0 16px;">
+    <button class="btn-ghost" onclick="exportAll()">💾 전체 기록 백업</button>
+  </div>
   <div class="page-scroll">
     <div style="height:8px;"></div>
     <div id="hist-list"></div>
@@ -947,6 +950,58 @@ async function saveShareImage(){
     toast('이미지 저장 중 오류가 생겼어요. 텍스트 복사를 이용해 주세요.');
   }finally{
     btn.textContent='🖼 이미지 저장';btn.disabled=false;
+  }
+}
+
+// ── 전체 기록 백업 ──
+function exportAll(){
+  const recs=getRecs();
+  if(!recs.length){toast('저장된 기록이 없어요.');return;}
+  const sorted=[...recs].sort((a,b)=>a.date.localeCompare(b.date));
+  let txt='🧘 요가 수련 일지 전체 기록\n';
+  txt+='='.repeat(30)+'\n\n';
+  sorted.forEach(r=>{
+    const d=r.date.replace(/-/g,'.');
+    txt+=`📅 ${d}\n`;
+    txt+='─'.repeat(24)+'\n';
+    if(r.bodyBefore||r.bodyAfter) txt+=`몸 상태: ${r.bodyBefore||'-'} → ${r.bodyAfter||'-'}점\n`;
+    if(r.mindBefore||r.mindAfter) txt+=`마음 상태: ${r.mindBefore||'-'} → ${r.mindAfter||'-'}점\n`;
+    const bTags=(r.bodyTags||[]).filter(t=>t&&t!=='기타').join(', ');
+    const mTags=(r.mindTags||[]).filter(t=>t&&t!=='기타').join(', ');
+    const fTags=(r.focusTags||[]).filter(t=>t&&t!=='기타').join(', ');
+    if(bTags) txt+=`몸 태그: ${bTags}\n`;
+    if(mTags) txt+=`마음 태그: ${mTags}\n`;
+    if(fTags) txt+=`집중: ${fTags}\n`;
+    if(r.goal) txt+=`🎯 ${r.goal}\n`;
+    if(r.thought) txt+=`💭 ${r.thought}\n`;
+    if(r.praise) txt+=`⭐ ${r.praise}\n`;
+    txt+='\n';
+  });
+  txt+=`총 ${recs.length}회 수련 기록`;
+
+  // 파일 다운로드 시도
+  try{
+    const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`요가일지_전체백업_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('💾 백업 파일이 저장됐어요!');
+  }catch{
+    // 모바일에서 다운로드 안 될 경우 클립보드 복사
+    try{
+      navigator.clipboard.writeText(txt).then(()=>{
+        toast('📋 전체 기록이 복사됐어요! 메모장에 붙여넣기 하세요.');
+      });
+    }catch{
+      const ta=document.createElement('textarea');
+      ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();
+      document.execCommand('copy');document.body.removeChild(ta);
+      toast('📋 전체 기록이 복사됐어요! 메모장에 붙여넣기 하세요.');
+    }
   }
 }
 
